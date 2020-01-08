@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>CAN <> WiFi</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+</head>
+
+<body id="page-top" style="min-height: 100%;">
+    <div id="wrapper" style="min-height: 100%;">
+        <div class="d-flex flex-column" id="content-wrapper">
+            <div id="content" style="min-height: 100%;">
+                <div class="container-fluid">
+                    <h3 class="text-dark mb-4">CAN &lt;&gt; WiFi</h3>
+                    <div class="row">
+                        <div class="col-xl-8">
+                            <div class="card shadow">
+                                <div class="card-header py-3">
+                                    <p class="text-primary m-0 font-weight-bold">CAN Data</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive table mt-2" role="grid" aria-describedby="dataTable_info">
+                                        <table class="table dataTable my-0" id="dataTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Time</th>
+                                                    <th>Id</th>
+                                                    <th>DLC</th>
+                                                    <th>Data</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="canDataDisplay">
+
+                                            </tbody>
+                                            <tfoot>
+                                                <tr></tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text">Id</span></div><input id="canId" class="form-control" type="text" placeholder="1" maxlength="3" minlength="1" pattern="[a-fA-F\d]+">
+                                            <div class="input-group-append"></div>
+                                        </div>
+                                        <div class="form-check"><input class="form-check-input" type="checkbox" id="formCheck-1"><label class="form-check-label" for="formCheck-1">RTR</label></div>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text">DLC</span></div><input id="canDLC" class="form-control" type="number" min="0" value="8" step="1" max="8"></div>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="input-group-text">Data</span></div>
+                                            <input id="canData1" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData2" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData3" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData4" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData5" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData6" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData7" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                            <input id="canData8" class="form-control" type="text" placeholder="A1" maxlength="2" minlength="0" pattern="[a-fA-F\d]+">
+                                        </div>
+                                    </form><button id="sendToCAN" class="btn btn-success btn-block" type="submit" disabled="1">Envoyer</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="bg-white sticky-footer">
+                <div class="container my-auto">
+                    <div class="text-center my-auto copyright"><span>Copyright © Antoine L. 2019</span></div>
+                </div>
+            </footer>
+        </div><a class="border rounded d-inline scroll-to-top" href="#page-top"><i class="fas fa-angle-up"></i></a></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.js"></script>
+    <script src="assets/js/theme.js"></script>
+    <script>
+
+        function get_appropriate_ws_url(extra_url)
+        {
+            var pcol;
+            var u = document.URL;
+
+            /*
+             * We open the websocket encrypted if this page came on an
+             * https:// url itself, otherwise unencrypted
+             */
+
+            if (u.substring(0, 5) === "https") {
+                pcol = "wss://";
+                u = u.substr(8);
+            } else {
+                pcol = "ws://";
+                if (u.substring(0, 4) === "http")
+                    u = u.substr(7);
+            }
+
+            u = u.split("/");
+
+            /* + "/xxx" bit is for IE10 workaround */
+
+            return pcol + u[0] + "/" + extra_url;
+        }
+
+        function new_ws(urlpath, protocol)
+        {
+            if (typeof MozWebSocket != "undefined")
+                return new MozWebSocket(urlpath, protocol);
+
+            return new WebSocket(urlpath, protocol);
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+
+            var ws = new_ws(get_appropriate_ws_url(""), "lws-minimal");
+            try {
+                ws.onopen = function() {
+                    $("#sendToCAN").attr("disabled", false);
+                };
+
+                ws.onmessage =function got_packet(msg) {
+                    //id#dlc#AABBCCDDEEFF1122
+                    //msg.data
+                    var dataParts = msg.data.split('#');
+                    if(dataParts.length === 3) {
+                        console.log(msg.data);
+                        var id = parseInt(dataParts[0], 10);
+                        var rtr = (id >= 40000000);
+                        var length = parseInt(dataParts[1], 10);
+                        var data = "";
+                        if(rtr) {
+                            id = id - 40000000;
+                            data = "(RTR) ";
+                        }
+                        data += dataParts[2];
+                        console.log("id: "+id);
+                        console.log("")
+                        var date = new Date();
+                        $("#canDataDisplay").prepend("<tr><td>"+date.toLocaleTimeString()+"."+date.getMilliseconds()+"</td><td>0x"+id.toString(16)+"</td><td>"+length+"</td><td>"+data+"</td></tr>")
+                    }
+
+                    /*document.getElementById("r").value =
+                        document.getElementById("r").value + msg.data + "\n";
+                    document.getElementById("r").scrollTop =
+                        document.getElementById("r").scrollHeight;*/
+                };
+
+                ws.onclose = function(){
+                    $("#sendToCAN").attr("disabled", true);
+                };
+            } catch(exception) {
+                alert("<p>Error " + exception);
+            }
+
+            function dec2hexString(dec) {
+                return (dec+0x100).toString(16).substr(-2).toUpperCase();
+            }
+
+            function sendmsg()
+            {
+                //id#dlc#AABBCCDDEEFF1122
+                var canId = parseInt(($("#canId").val(),16));
+                var dlc = $("#canDLC").val();
+                var intDLC = parseInt(dlc, 10);
+                var data = "";
+                for (let i = 1; i <= intDLC; i++) {
+                    data += dec2hexString(parseInt($("#canData"+i).val(),16));
+                }
+                console.log(canId+"#"+dlc+"#"+data);
+                ws.send(canId+"#"+dlc+"#"+data);
+
+            }
+
+            document.getElementById("sendToCAN").addEventListener("click", sendmsg);
+
+        }, false);
+
+    </script>
+</body>
+
+</html>
