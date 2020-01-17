@@ -2,7 +2,7 @@
 
 ## Installation du rootfs
 Téléchargement de yocto sur [https://boundarydevices.com/yocto-release-for-i-mx8mq/](https://boundarydevices.com/yocto-release-for-i-mx8mq/)
-Puis pour effectuer le transfer sur la emmc [https://boundarydevices.com/programming-emmc-on-i-mx8/](https://boundarydevices.com/programming-emmc-on-i-mx8/)
+Puis pour effectuer le transfert sur la emmc [https://boundarydevices.com/programming-emmc-on-i-mx8/](https://boundarydevices.com/programming-emmc-on-i-mx8/)
 
 Pour cela, un va utiliser le USB Mass Storage pour transférer yocto sur l’emmc.
 ```shell
@@ -32,7 +32,9 @@ user@ubuntu:~/linux-imx6$ make menuconfig
 Un interface va s’ouvrir pour configurer les différents éléments que l’on souhaite avoir dans le noyau linux ou dans les modules. [M] indique que l’élément va être dans un module. [*] indique que l’élément va être dans le noyau.
 > \> Networking support > Wireless > [*]Generic IEEE 802.11 Networking Stack (mac80211)
 > \> Device Drivers > USB support > USB Serial Converter support > <\*>  USB FTDI Single Port Serial Driver
->  \> slcan
+>  \> Networking support > CAN bus subsystem support > Raw CAN Protocol (raw access with CAN-ID filtering)
+>  \> Networking support > CAN bus subsystem support > Broadcast Manager CAN Protocol (with content filtering)
+>  \> Networking support > CAN bus subsystem support > CAN Gateway/Router (with netlink configuration)
 
 On peut maintenant compiler le noyau Linux
 ```shell
@@ -63,7 +65,7 @@ U-Boot > setenv br 'tftpboot 0x40480000 Image;tftpboot 0x43000000 imx8mq-nitroge
 U-Boot > saveenv
 U-Boot > run br
 ```
-Pour les fois suivante, il faut juste exécuter la commande ‘run br’
+Pour les fois suivantes, il faut juste exécuter la commande ‘run br’
 
 ## Compilation et installation du driver WIFI
 On va commencer par la compilation du driver WIFI
@@ -74,7 +76,7 @@ user@ubuntu:~/qcacld-2.0$ export ARCH=arm64
 user@ubuntu:~/qcacld-2.0$ export CROSS_COMPILE=aarch64-linux-gnu-
 user@ubuntu:~/qcacld-2.0$ KERNEL_SRC=/home/user/linux-imx6 CONFIG_CLD_HL_SDIO_CORE=y make
 ```
-Une fois la compilation terminé, le driver est présent sous la forme du fichier 'wlan.ko'. Pour le transférer dans le rootfs, nous allons encore une fois utiliser le serveur tftp.
+Une fois la compilation terminée, le driver est présent sous la forme du fichier 'wlan.ko'. Pour le transférer dans le rootfs, nous allons encore une fois utiliser le serveur tftp.
 ```shell
 user@ubuntu:~/qcacld-2.0$ cp wlan.ko /tftpboot/
 ```
@@ -99,7 +101,31 @@ root@Nitrogen8m:~$ nmcli device wifi rescan
 root@Nitrogen8m:~$ nmcli device wifi list
 root@Nitrogen8m:~$ nmcli device wifi connect MyWifi password MyPassword
 ```
+## Mise en place du Bus CAN
+Pour communiquer sur le bus CAN, nous allons utiliser une passerelle [CANUSB](https://www.kanda.com/products/Lawicel/CANUSB.html). Nous avons déjà activé les différents driver CAN lors de la configuration du noyau linux. Il nous reste donc à cross-compiler les utilitaires CAN pour pouvoir configurer correctement le bus.
+```shell
+user@ubuntu:~$ sudo apt-get install autoconf libtool
+user@ubuntu:~$ git clone https://github.com/linux-can/can-utils.git
+user@ubuntu:~$ cd can-utils
+user@ubuntu:~/can-utils$ ./autogen.sh
+user@ubuntu:~/can-utils$ ./configure --host=aarch64-linux-gnu
+```
+Une fois la compilation terminée, il faut transférer les fichiers "slcand", "candump" et "cansend" (en utilisant le serveur TFTP) sur la carte nitrogen. 
+Nous pouvons maintenant configurer le bus can en utilisant l'utilitaire "slcand":
+```shell
+root@Nitrogen8m:~$ tftp -g -r slcand 10.10.3.243
+root@Nitrogen8m:~$ tftp -g -r candump 10.10.3.243
+root@Nitrogen8m:~$ tftp -g -r cansend 10.10.3.243
+root@Nitrogen8m:~$ ./slcand -o -s4 -t hw -S 3000000 /dev/ttyUSB0
+root@Nitrogen8m:~$ ip link set up slcan0
+``` 
+Les paramètres de la commande slcand sont "-s4" pour indiquer que l'on souhaite une vitesse de transmission de 125 kbit/s, "-S 3000000" pour dire que l'on veut une vitesse de communication USB de 3Mbit/s. Enfin il faut activer l'interface avec la commande "ip".
 
+On peut effectuer des tests pour vérifier que l'on arrive à communiquer avec le bus CAN en utilisant les utilitaires "candump" et "cansend".
+```shell
+root@Nitrogen8m:~$ ./candump slcan0
+root@Nitrogen8m:~$ ./cansend slcan0 123#DEADBEEF
+``` 
 ## Compilation de libwebsokets
 
 L'objectif est de cross compiler un serveur websocket utilisant la librairie [libwebsokets](https://github.com/warmcat/libwebsockets) pour l’exécuter sur une carte développement [Nitrogen8M](https://boundarydevices.com/product/nitrogen8m/).
