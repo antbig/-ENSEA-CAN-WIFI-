@@ -176,4 +176,28 @@ user@ubuntu:~/libwebsockets/build$ cmake .. -DCMAKE_TOOLCHAIN_FILE=./cross-aarch
 user@ubuntu:~/libwebsockets/build$ make
 ```
 Il ne reste plus qu'à attendre la fin de la compilation.
-![](https://lh3.googleusercontent.com/fNW79bmHwaT3bNmBuQoCa88_g3S0UaDPd8tWC7rsy8bXDw-crZDfREevy-KIk4x5hRt_-4JwT4YifkKE9iRnDe8OrTC10WKxn9kFwVCQ9Nkw8QBsTbWVhJcgEV3WaeOnbxs_kp6n)
+![](https://lh3.googleusercontent.com/fNW79bmHwaT3bNmBuQoCa88_g3S0UaDPd8tWC7rsy8bXDw-crZDfREevy-KIk4x5hRt_-4JwT4YifkKE9iRnDe8OrTC10WKxn9kFwVCQ9Nkw8QBsTbWVhJcgEV3WaeOnbxs_kp6n)La compilation va générer plusieurs fichiers et dossier.
+
+![](https://lh3.googleusercontent.com/JhHroOicCc43uoCZhcktq2taiiztEYtMjiBqmm5cMfkxWdexMltXobU3NLGsnDuY0JS43qrKi-gsILaixXOuXemLqFHhfe5MEwS0-x6S_GG3zgNqEMmx3tGzQ8OvuBn-qxH1meXx)
+
+Le dossier “bin” contient les exécutables pour les programmes d’exemple qui sont compilé en même temps que la librairie.
+Le dossier “include” contient les fichiers .h qui définissent l’ensemble des fonctions de la librairie.
+Le dossier “lib” contient la librairie en elle même. Elle est composé d’un .so et d’un .a.
+Enfin le dossier “share” contient les fichiers web utilisés par les programmes d'exemple.
+
+
+Il faut installer la librairie sur notre carte, pour cela nous transférons les fichiers “libwebsockets.so.15” et “libwebsockets.a” sur la carte en utilisant TFTP. Une fois les fichiers sur la carte, il faut les mettres dans le dossier /usr/lib.
+Par le suite, nous pouvons compiler un projet souhaitant utiliser la libwebsockets avec l'instruction suivante:
+```shell
+user@ubuntu:~$ aarch64-linux-gnu-gcc -o myExe main.c -I./includes/ -L./lib/ -lwebsockets
+```
+Nous avons remarqué que l'ordre des paramètres est très important et que  leurs inversion résulte en un échec de la compilation
+## Compilation du projet
+Pour compiler le projet, un simple make suffit. Un obtient le fichier server qu'il faut mettre sur la carte nitrogen (en utilisant le serveur tftp) ainsi que le dossier "[mount-origin](https://github.com/antbig/ENSEA-CAN-WIFI/tree/master/mount-origin "mount-origin")" qui contient l'ensemble des fichiers web utilisé par le serveur.
+```shell
+root@Nitrogen8m:~$ chmod +x server
+root@Nitrogen8m:~$ ./server
+``` 
+Un fois le serveur lancé nous pouvons nous rendre sur l’adresse ip de la carte nitrogen pour voir le site web et ainsi communiquer avec le bus CAN.
+![https://i.antbig.fr/huYRPW.png](https://i.antbig.fr/huYRPW.png)
+
