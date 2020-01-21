@@ -31,9 +31,13 @@ user@ubuntu:~/linux-imx6$ make menuconfig
 ```
 Un interface va s’ouvrir pour configurer les différents éléments que l’on souhaite avoir dans le noyau linux ou dans les modules. [M] indique que l’élément va être dans un module. [*] indique que l’élément va être dans le noyau.
 > \> Networking support > Wireless > [*]Generic IEEE 802.11 Networking Stack (mac80211)
+
 > \> Device Drivers > USB support > USB Serial Converter support > <\*>  USB FTDI Single Port Serial Driver
+
 >  \> Networking support > CAN bus subsystem support > Raw CAN Protocol (raw access with CAN-ID filtering)
+
 >  \> Networking support > CAN bus subsystem support > Broadcast Manager CAN Protocol (with content filtering)
+
 >  \> Networking support > CAN bus subsystem support > CAN Gateway/Router (with netlink configuration)
 
 On peut maintenant compiler le noyau Linux
